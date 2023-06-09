@@ -56,7 +56,7 @@ func testChannel(channel *model.Channel, request *ChatRequest) error {
 	if err != nil {
 		return err
 	}
-	if response.Error.Message != "" || response.Error.Code != "" {
+	if response.Usage.CompletionTokens == 0 {
 		return errors.New(fmt.Sprintf("type %s, code %s, message %s", response.Error.Type, response.Error.Code, response.Error.Message))
 	}
 	return nil
@@ -125,11 +125,11 @@ func disableChannel(channelId int, channelName string, reason string) {
 		common.RootUserEmail = model.GetRootUserEmail()
 	}
 	model.UpdateChannelStatusById(channelId, common.ChannelStatusDisabled)
-	subject := fmt.Sprintf("aisle「%s」（#%d）disabled", channelName, channelId)
-	content := fmt.Sprintf("aisle「%s」（#%d）disabled，reason：%s", channelName, channelId, reason)
+	subject := fmt.Sprintf("通道「%s」（#%d）已被禁用", channelName, channelId)
+	content := fmt.Sprintf("通道「%s」（#%d）已被禁用，原因：%s", channelName, channelId, reason)
 	err := common.SendEmail(subject, common.RootUserEmail, content)
 	if err != nil {
-		common.SysError(fmt.Sprintf("Failed to send mail：%s", err.Error()))
+		common.SysError(fmt.Sprintf("发送邮件失败：%s", err.Error()))
 	}
 }
 
@@ -140,7 +140,7 @@ func testAllChannels(c *gin.Context) error {
 	testAllChannelsLock.Lock()
 	if testAllChannelsRunning {
 		testAllChannelsLock.Unlock()
-		return errors.New("Test is already running")
+		return errors.New("测试已在运行中")
 	}
 	testAllChannelsRunning = true
 	testAllChannelsLock.Unlock()
@@ -168,15 +168,15 @@ func testAllChannels(c *gin.Context) error {
 			milliseconds := tok.Sub(tik).Milliseconds()
 			if err != nil || milliseconds > disableThreshold {
 				if milliseconds > disableThreshold {
-					err = errors.New(fmt.Sprintf("Response time %.2fs Threshold exceeded %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0))
+					err = errors.New(fmt.Sprintf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0))
 				}
 				disableChannel(channel.Id, channel.Name, err.Error())
 			}
 			channel.UpdateResponseTime(milliseconds)
 		}
-		err := common.SendEmail("Channel test complete", common.RootUserEmail, "Channel test complete，If you do not receive a disabling notification，Indicates that all channels are normal")
+		err := common.SendEmail("通道测试完成", common.RootUserEmail, "通道测试完成，如果没有收到禁用通知，说明所有通道都正常")
 		if err != nil {
-			common.SysError(fmt.Sprintf("Failed to send mail：%s", err.Error()))
+			common.SysError(fmt.Sprintf("发送邮件失败：%s", err.Error()))
 		}
 		testAllChannelsLock.Lock()
 		testAllChannelsRunning = false
