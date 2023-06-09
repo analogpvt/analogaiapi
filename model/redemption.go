@@ -2,7 +2,6 @@ package model
 
 import (
 	"errors"
-	_ "gorm.io/driver/sqlite"
 	"one-api/common"
 )
 
@@ -32,7 +31,7 @@ func SearchRedemptions(keyword string) (redemptions []*Redemption, err error) {
 
 func GetRedemptionById(id int) (*Redemption, error) {
 	if id == 0 {
-		return nil, errors.New("id Is empty！")
+		return nil, errors.New("id 为空！")
 	}
 	redemption := Redemption{Id: id}
 	var err error = nil
@@ -42,18 +41,18 @@ func GetRedemptionById(id int) (*Redemption, error) {
 
 func Redeem(key string, userId int) (quota int, err error) {
 	if key == "" {
-		return 0, errors.New("No redemption code provided")
+		return 0, errors.New("未提供兑换码")
 	}
 	if userId == 0 {
-		return 0, errors.New("Invalid user id")
+		return 0, errors.New("无效的 user id")
 	}
 	redemption := &Redemption{}
 	err = DB.Where("`key` = ?", key).First(redemption).Error
 	if err != nil {
-		return 0, errors.New("invalid redemption code")
+		return 0, errors.New("无效的兑换码")
 	}
 	if redemption.Status != common.RedemptionCodeStatusEnabled {
-		return 0, errors.New("This redemption code has already been used")
+		return 0, errors.New("该兑换码已被使用")
 	}
 	err = IncreaseUserQuota(userId, redemption.Quota)
 	if err != nil {
@@ -64,7 +63,7 @@ func Redeem(key string, userId int) (quota int, err error) {
 		redemption.Status = common.RedemptionCodeStatusUsed
 		err := redemption.SelectUpdate()
 		if err != nil {
-			common.SysError("Failed to update redemption code status：" + err.Error())
+			common.SysError("更新兑换码状态失败：" + err.Error())
 		}
 	}()
 	return redemption.Quota, nil
@@ -96,7 +95,7 @@ func (redemption *Redemption) Delete() error {
 
 func DeleteRedemptionById(id int) (err error) {
 	if id == 0 {
-		return errors.New("id Is empty！")
+		return errors.New("id 为空！")
 	}
 	redemption := Redemption{Id: id}
 	err = DB.Where(redemption).First(&redemption).Error
