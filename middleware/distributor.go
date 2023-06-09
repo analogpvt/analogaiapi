@@ -22,7 +22,7 @@ func Distribute() func(c *gin.Context) {
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{
 					"error": gin.H{
-						"message": "invalid channel ID",
+						"message": "无效的渠道 ID",
 						"type":    "one_api_error",
 					},
 				})
@@ -33,7 +33,7 @@ func Distribute() func(c *gin.Context) {
 			if err != nil {
 				c.JSON(200, gin.H{
 					"error": gin.H{
-						"message": "invalid channel ID",
+						"message": "无效的渠道 ID",
 						"type":    "one_api_error",
 					},
 				})
@@ -43,7 +43,7 @@ func Distribute() func(c *gin.Context) {
 			if channel.Status != common.ChannelStatusEnabled {
 				c.JSON(200, gin.H{
 					"error": gin.H{
-						"message": "This channel has been disabled",
+						"message": "该渠道已被禁用",
 						"type":    "one_api_error",
 					},
 				})
@@ -52,12 +52,25 @@ func Distribute() func(c *gin.Context) {
 			}
 		} else {
 			// Select a channel for the user
-			var err error
-			channel, err = model.GetRandomChannel()
+			var modelRequest ModelRequest
+			err := common.UnmarshalBodyReusable(c, &modelRequest)
 			if err != nil {
 				c.JSON(200, gin.H{
 					"error": gin.H{
-						"message": "no channel available",
+						"message": "无效的请求",
+						"type":    "one_api_error",
+					},
+				})
+				c.Abort()
+				return
+			}
+			userId := c.GetInt("id")
+			userGroup, _ := model.GetUserGroup(userId)
+			channel, err = model.GetRandomSatisfiedChannel(userGroup, modelRequest.Model)
+			if err != nil {
+				c.JSON(200, gin.H{
+					"error": gin.H{
+						"message": "无可用渠道",
 						"type":    "one_api_error",
 					},
 				})
