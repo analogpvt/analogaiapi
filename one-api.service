@@ -1,0 +1,13 @@
+[Unit]
+Description=One API Service
+After=network.target
+
+[Service]
+User=yourusername                  # daemon username
+WorkingDirectory=/path/to/One-API  # One API running path
+ExecStart=/path/to/One-API/one-api --port 3000 --log-dir /path/to/One-API/logs  # port
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
