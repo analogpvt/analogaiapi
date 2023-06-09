@@ -9,6 +9,10 @@ import (
 	"strconv"
 )
 
+type ModelRequest struct {
+	Model string `json:"model"`
+}
+
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var channel *model.Channel
