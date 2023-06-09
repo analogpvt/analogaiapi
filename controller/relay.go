@@ -82,7 +82,7 @@ func Relay(c *gin.Context) {
 	err := relayHelper(c)
 	if err != nil {
 		if err.StatusCode == http.StatusTooManyRequests {
-			err.OpenAIError.Message = "The load is full, please try again later, or upgrade your account to improve service quality。"
+			err.OpenAIError.Message = "负载已满，请稍后再试，或升级账户以提升服务质量。"
 		}
 		c.JSON(err.StatusCode, gin.H{
 			"error": err.OpenAIError,
@@ -116,20 +116,10 @@ func relayHelper(c *gin.Context) *OpenAIErrorWithStatusCode {
 	consumeQuota := c.GetBool("consume_quota")
 	var textRequest GeneralOpenAIRequest
 	if consumeQuota || channelType == common.ChannelTypeAzure || channelType == common.ChannelTypePaLM {
-		requestBody, err := io.ReadAll(c.Request.Body)
+		err := common.UnmarshalBodyReusable(c, &textRequest)
 		if err != nil {
-			return errorWrapper(err, "read_request_body_failed", http.StatusBadRequest)
+			return errorWrapper(err, "bind_request_body_failed", http.StatusBadRequest)
 		}
-		err = c.Request.Body.Close()
-		if err != nil {
-			return errorWrapper(err, "close_request_body_failed", http.StatusBadRequest)
-		}
-		err = json.Unmarshal(requestBody, &textRequest)
-		if err != nil {
-			return errorWrapper(err, "unmarshal_request_body_failed", http.StatusBadRequest)
-		}
-		// Reset request body
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}
 	baseURL := common.ChannelBaseURLs[channelType]
 	requestURL := c.Request.URL.String()
