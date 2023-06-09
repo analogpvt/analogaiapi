@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { API, showError, showInfo, showSuccess, timestamp2string } from '../helpers';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../constants';
+import { renderGroup } from '../helpers/render';
 
 function renderTimestamp(timestamp) {
   return (
@@ -21,7 +22,7 @@ function renderType(type) {
     for (let i = 0; i < CHANNEL_OPTIONS.length; i++) {
       type2label[CHANNEL_OPTIONS[i].value] = CHANNEL_OPTIONS[i];
     }
-    type2label[0] = { value: 0, text: 'unknown type', color: 'grey' };
+    type2label[0] = { value: 0, text: '未知类型', color: 'grey' };
   }
   return <Label basic color={type2label[type].color}>{type2label[type].text}</Label>;
 }
@@ -92,7 +93,7 @@ const ChannelsTable = () => {
     }
     const { success, message } = res.data;
     if (success) {
-      showSuccess('Operation completed successfully！');
+      showSuccess('操作成功完成！');
       let channel = res.data.data;
       let newChannels = [...channels];
       let realIdx = (activePage - 1) * ITEMS_PER_PAGE + idx;
@@ -110,17 +111,17 @@ const ChannelsTable = () => {
   const renderStatus = (status) => {
     switch (status) {
       case 1:
-        return <Label basic color='green'>activated</Label>;
+        return <Label basic color='green'>已启用</Label>;
       case 2:
         return (
           <Label basic color='red'>
-            disabled
+            已禁用
           </Label>
         );
       default:
         return (
           <Label basic color='grey'>
-            unknown status
+            未知状态
           </Label>
         );
     }
@@ -128,9 +129,9 @@ const ChannelsTable = () => {
 
   const renderResponseTime = (responseTime) => {
     let time = responseTime / 1000;
-    time = time.toFixed(2) + 'Second';
+    time = time.toFixed(2) + ' 秒';
     if (responseTime === 0) {
-      return <Label basic color='grey'>not tested</Label>;
+      return <Label basic color='grey'>未测试</Label>;
     } else if (responseTime <= 1000) {
       return <Label basic color='green'>{time}</Label>;
     } else if (responseTime <= 3000) {
@@ -170,7 +171,7 @@ const ChannelsTable = () => {
       newChannels[realIdx].response_time = time * 1000;
       newChannels[realIdx].test_time = Date.now() / 1000;
       setChannels(newChannels);
-      showInfo(`aisle ${name} The test was successful, time-consuming ${time.toFixed(2)} 秒。`);
+      showInfo(`通道 ${name} 测试成功，耗时 ${time.toFixed(2)} 秒。`);
     } else {
       showError(message);
     }
@@ -180,7 +181,7 @@ const ChannelsTable = () => {
     const res = await API.get(`/api/channel/test`);
     const { success, message } = res.data;
     if (success) {
-      showInfo('Successfully started testing all enabled channels, please refresh the page to view the results.');
+      showInfo('已成功开始测试所有已启用通道，请刷新页面查看结果。');
     } else {
       showError(message);
     }
@@ -195,7 +196,7 @@ const ChannelsTable = () => {
       newChannels[realIdx].balance = balance;
       newChannels[realIdx].balance_updated_time = Date.now() / 1000;
       setChannels(newChannels);
-      showInfo(`Channel ${name} balance updated successfully！`);
+      showInfo(`通道 ${name} 余额更新成功！`);
     } else {
       showError(message);
     }
@@ -206,7 +207,7 @@ const ChannelsTable = () => {
     const res = await API.get(`/api/channel/update_balance`);
     const { success, message } = res.data;
     if (success) {
-      showInfo('All enabled channel balances have been updated！');
+      showInfo('已更新完毕所有已启用通道余额！');
     } else {
       showError(message);
     }
@@ -238,7 +239,7 @@ const ChannelsTable = () => {
           icon='search'
           fluid
           iconPosition='left'
-          placeholder='ID and name of the search channel ...'
+          placeholder='搜索渠道的 ID 和名称 ...'
           value={searchKeyword}
           loading={searching}
           onChange={handleKeywordChange}
@@ -262,7 +263,15 @@ const ChannelsTable = () => {
                 sortChannel('name');
               }}
             >
-              name
+              名称
+            </Table.HeaderCell>
+            <Table.HeaderCell
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                sortChannel('group');
+              }}
+            >
+              分组
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -270,7 +279,7 @@ const ChannelsTable = () => {
                 sortChannel('type');
               }}
             >
-              type
+              类型
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -278,7 +287,7 @@ const ChannelsTable = () => {
                 sortChannel('status');
               }}
             >
-              state
+              状态
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -286,7 +295,7 @@ const ChannelsTable = () => {
                 sortChannel('response_time');
               }}
             >
-              Response time
+              响应时间
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -294,9 +303,9 @@ const ChannelsTable = () => {
                 sortChannel('balance');
               }}
             >
-              balance
+              余额
             </Table.HeaderCell>
-            <Table.HeaderCell>operate</Table.HeaderCell>
+            <Table.HeaderCell>操作</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
 
@@ -311,12 +320,13 @@ const ChannelsTable = () => {
               return (
                 <Table.Row key={channel.id}>
                   <Table.Cell>{channel.id}</Table.Cell>
-                  <Table.Cell>{channel.name ? channel.name : 'none'}</Table.Cell>
+                  <Table.Cell>{channel.name ? channel.name : '无'}</Table.Cell>
+                  <Table.Cell>{renderGroup(channel.group)}</Table.Cell>
                   <Table.Cell>{renderType(channel.type)}</Table.Cell>
                   <Table.Cell>{renderStatus(channel.status)}</Table.Cell>
                   <Table.Cell>
                     <Popup
-                      content={channel.test_time ? renderTimestamp(channel.test_time) : 'not tested'}
+                      content={channel.test_time ? renderTimestamp(channel.test_time) : '未测试'}
                       key={channel.id}
                       trigger={renderResponseTime(channel.response_time)}
                       basic
@@ -324,7 +334,7 @@ const ChannelsTable = () => {
                   </Table.Cell>
                   <Table.Cell>
                     <Popup
-                      content={channel.balance_updated_time ? renderTimestamp(channel.balance_updated_time) : 'not up-to-date'}
+                      content={channel.balance_updated_time ? renderTimestamp(channel.balance_updated_time) : '未更新'}
                       key={channel.id}
                       trigger={<span>${channel.balance.toFixed(2)}</span>}
                       basic
@@ -339,7 +349,7 @@ const ChannelsTable = () => {
                           testChannel(channel.id, channel.name, idx);
                         }}
                       >
-                        test
+                        测试
                       </Button>
                       <Button
                         size={'small'}
@@ -349,12 +359,12 @@ const ChannelsTable = () => {
                           updateChannelBalance(channel.id, channel.name, idx);
                         }}
                       >
-                        update balance
+                        更新余额
                       </Button>
                       <Popup
                         trigger={
                           <Button size='small' negative>
-                            delete
+                            删除
                           </Button>
                         }
                         on='click'
@@ -367,7 +377,7 @@ const ChannelsTable = () => {
                             manageChannel(channel.id, 'delete', idx);
                           }}
                         >
-                          delete channel {channel.name}
+                          删除渠道 {channel.name}
                         </Button>
                       </Popup>
                       <Button
@@ -380,14 +390,14 @@ const ChannelsTable = () => {
                           );
                         }}
                       >
-                        {channel.status === 1 ? 'disabled' : 'enable'}
+                        {channel.status === 1 ? '禁用' : '启用'}
                       </Button>
                       <Button
                         size={'small'}
                         as={Link}
                         to={'/channel/edit/' + channel.id}
                       >
-                        edit
+                        编辑
                       </Button>
                     </div>
                   </Table.Cell>
@@ -398,14 +408,14 @@ const ChannelsTable = () => {
 
         <Table.Footer>
           <Table.Row>
-            <Table.HeaderCell colSpan='7'>
+            <Table.HeaderCell colSpan='8'>
               <Button size='small' as={Link} to='/channel/add' loading={loading}>
-               add new channel
+                添加新的渠道
               </Button>
               <Button size='small' loading={loading} onClick={testAllChannels}>
-                Test all enabled channels
+                测试所有已启用通道
               </Button>
-              <Button size='small' onClick={updateAllChannelsBalance} loading={loading || updatingBalance}>Update all enabled channel balances</Button>
+              <Button size='small' onClick={updateAllChannelsBalance} loading={loading || updatingBalance}>更新所有已启用通道余额</Button>
               <Pagination
                 floated='right'
                 activePage={activePage}
@@ -417,7 +427,7 @@ const ChannelsTable = () => {
                   (channels.length % ITEMS_PER_PAGE === 0 ? 1 : 0)
                 }
               />
-              <Button size='small' onClick={refresh} loading={loading}>to refresh</Button>
+              <Button size='small' onClick={refresh} loading={loading}>刷新</Button>
             </Table.HeaderCell>
           </Table.Row>
         </Table.Footer>
