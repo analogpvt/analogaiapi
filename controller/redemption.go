@@ -1,192 +1,106 @@
-package controller
+package model
 
 import (
-	"github.com/gin-gonic/gin"
-	"net/http"
+	"errors"
 	"one-api/common"
-	"one-api/model"
-	"strconv"
 )
 
-func GetAllRedemptions(c *gin.Context) {
-	p, _ := strconv.Atoi(c.Query("p"))
-	if p < 0 {
-		p = 0
-	}
-	redemptions, err := model.GetAllRedemptions(p*common.ItemsPerPage, common.ItemsPerPage)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    redemptions,
-	})
-	return
+type Redemption struct {
+	Id           int    `json:"id"`
+	UserId       int    `json:"user_id"`
+	Key          string `json:"key" gorm:"type:char(32);uniqueIndex"`
+	Status       int    `json:"status" gorm:"default:1"`
+	Name         string `json:"name" gorm:"index"`
+	Quota        int    `json:"quota" gorm:"default:100"`
+	CreatedTime  int64  `json:"created_time" gorm:"bigint"`
+	RedeemedTime int64  `json:"redeemed_time" gorm:"bigint"`
+	Count        int    `json:"count" gorm:"-:all"` // only for api request
 }
 
-func SearchRedemptions(c *gin.Context) {
-	keyword := c.Query("keyword")
-	redemptions, err := model.SearchRedemptions(keyword)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    redemptions,
-	})
-	return
+func GetAllRedemptions(startIdx int, num int) ([]*Redemption, error) {
+	var redemptions []*Redemption
+	var err error
+	err = DB.Order("id desc").Limit(num).Offset(startIdx).Find(&redemptions).Error
+	return redemptions, err
 }
 
-func GetRedemption(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	redemption, err := model.GetRedemptionById(id)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    redemption,
-	})
-	return
+func SearchRedemptions(keyword string) (redemptions []*Redemption, err error) {
+	err = DB.Where("id = ? or name LIKE ?", keyword, keyword+"%").Find(&redemptions).Error
+	return redemptions, err
 }
 
-func AddRedemption(c *gin.Context) {
-	redemption := model.Redemption{}
-	err := c.ShouldBindJSON(&redemption)
+func GetRedemptionById(id int) (*Redemption, error) {
+	if id == 0 {
+		return nil, errors.New("id 为空！")
+	}
+	redemption := Redemption{Id: id}
+	var err error = nil
+	err = DB.First(&redemption, "id = ?", id).Error
+	return &redemption, err
+}
+
+func Redeem(key string, userId int) (quota int, err error) {
+	if key == "" {
+		return 0, errors.New("未提供兑换码")
+	}
+	if userId == 0 {
+		return 0, errors.New("无效的 user id")
+	}
+	redemption := &Redemption{}
+	err = DB.Where("`key` = ?", key).First(redemption).Error
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
+		return 0, errors.New("无效的兑换码")
 	}
-	if len(redemption.Name) == 0 || len(redemption.Name) > 20 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Redemption code name length must be within1-20between",
-		})
-		return
+	if redemption.Status != common.RedemptionCodeStatusEnabled {
+		return 0, errors.New("该兑换码已被使用")
 	}
-	if redemption.Count <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "The number of redemption codes must be greater than0",
-		})
-		return
+	err = IncreaseUserQuota(userId, redemption.Quota)
+	if err != nil {
+		return 0, err
 	}
-	if redemption.Count > 100 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "一The number of redemption codes generated in batches cannot be greater than 100",
-		})
-		return
-	}
-	var keys []string
-	for i := 0; i < redemption.Count; i++ {
-		key := common.GetUUID()
-		cleanRedemption := model.Redemption{
-			UserId:      c.GetInt("id"),
-			Name:        redemption.Name,
-			Key:         key,
-			CreatedTime: common.GetTimestamp(),
-			Quota:       redemption.Quota,
-		}
-		err = cleanRedemption.Insert()
+	go func() {
+		redemption.RedeemedTime = common.GetTimestamp()
+		redemption.Status = common.RedemptionCodeStatusUsed
+		err := redemption.SelectUpdate()
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-				"data":    keys,
-			})
-			return
+			common.SysError("更新兑换码状态失败：" + err.Error())
 		}
-		keys = append(keys, key)
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    keys,
-	})
-	return
+	}()
+	return redemption.Quota, nil
 }
 
-func DeleteRedemption(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	err := model.DeleteRedemptionById(id)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-	})
-	return
+func (redemption *Redemption) Insert() error {
+	var err error
+	err = DB.Create(redemption).Error
+	return err
 }
 
-func UpdateRedemption(c *gin.Context) {
-	statusOnly := c.Query("status_only")
-	redemption := model.Redemption{}
-	err := c.ShouldBindJSON(&redemption)
+func (redemption *Redemption) SelectUpdate() error {
+	// This can update zero values
+	return DB.Model(redemption).Select("redeemed_time", "status").Updates(redemption).Error
+}
+
+// Update Make sure your token's fields is completed, because this will update non-zero values
+func (redemption *Redemption) Update() error {
+	var err error
+	err = DB.Model(redemption).Select("name", "status", "quota", "redeemed_time").Updates(redemption).Error
+	return err
+}
+
+func (redemption *Redemption) Delete() error {
+	var err error
+	err = DB.Delete(redemption).Error
+	return err
+}
+
+func DeleteRedemptionById(id int) (err error) {
+	if id == 0 {
+		return errors.New("id 为空！")
+	}
+	redemption := Redemption{Id: id}
+	err = DB.Where(redemption).First(&redemption).Error
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
+		return err
 	}
-	cleanRedemption, err := model.GetRedemptionById(redemption.Id)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	if statusOnly != "" {
-		cleanRedemption.Status = redemption.Status
-	} else {
-		// If you add more fields, please also update redemption.Update()
-		cleanRedemption.Name = redemption.Name
-		cleanRedemption.Quota = redemption.Quota
-	}
-	err = cleanRedemption.Update()
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    cleanRedemption,
-	})
-	return
+	return redemption.Delete()
 }
