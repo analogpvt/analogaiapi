@@ -22,6 +22,7 @@ type User struct {
 	VerificationCode string `json:"verification_code" gorm:"-:all"`                                    // this field is only for Email verification, don't save it to database!
 	AccessToken      string `json:"access_token" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
 	Quota            int    `json:"quota" gorm:"type:int;default:0"`
+	Group            string `json:"group" gorm:"type:varchar(32);default:'default'"`
 }
 
 func GetMaxUserId() int {
@@ -42,7 +43,7 @@ func SearchUsers(keyword string) (users []*User, err error) {
 
 func GetUserById(id int, selectAll bool) (*User, error) {
 	if id == 0 {
-		return nil, errors.New("id Is empty！")
+		return nil, errors.New("id 为空！")
 	}
 	user := User{Id: id}
 	var err error = nil
@@ -56,7 +57,7 @@ func GetUserById(id int, selectAll bool) (*User, error) {
 
 func DeleteUserById(id int) (err error) {
 	if id == 0 {
-		return errors.New("id Is empty！")
+		return errors.New("id 为空！")
 	}
 	user := User{Id: id}
 	return user.Delete()
@@ -90,7 +91,7 @@ func (user *User) Update(updatePassword bool) error {
 
 func (user *User) Delete() error {
 	if user.Id == 0 {
-		return errors.New("id Is empty！")
+		return errors.New("id 为空！")
 	}
 	err := DB.Delete(user).Error
 	return err
@@ -103,19 +104,19 @@ func (user *User) ValidateAndFill() (err error) {
 	// it won’t be used to build query conditions
 	password := user.Password
 	if user.Username == "" || password == "" {
-		return errors.New("username or password is empty")
+		return errors.New("用户名或密码为空")
 	}
 	DB.Where(User{Username: user.Username}).First(user)
 	okay := common.ValidatePasswordAndHash(password, user.Password)
 	if !okay || user.Status != common.UserStatusEnabled {
-		return errors.New("Incorrect username or password, or the user has been banned")
+		return errors.New("用户名或密码错误，或用户已被封禁")
 	}
 	return nil
 }
 
 func (user *User) FillUserById() error {
 	if user.Id == 0 {
-		return errors.New("id Is empty！")
+		return errors.New("id 为空！")
 	}
 	DB.Where(User{Id: user.Id}).First(user)
 	return nil
@@ -123,7 +124,7 @@ func (user *User) FillUserById() error {
 
 func (user *User) FillUserByEmail() error {
 	if user.Email == "" {
-		return errors.New("email Is empty！")
+		return errors.New("email 为空！")
 	}
 	DB.Where(User{Email: user.Email}).First(user)
 	return nil
@@ -131,7 +132,7 @@ func (user *User) FillUserByEmail() error {
 
 func (user *User) FillUserByGitHubId() error {
 	if user.GitHubId == "" {
-		return errors.New("GitHub id Is empty！")
+		return errors.New("GitHub id 为空！")
 	}
 	DB.Where(User{GitHubId: user.GitHubId}).First(user)
 	return nil
@@ -139,7 +140,7 @@ func (user *User) FillUserByGitHubId() error {
 
 func (user *User) FillUserByWeChatId() error {
 	if user.WeChatId == "" {
-		return errors.New("WeChat id Is empty！")
+		return errors.New("WeChat id 为空！")
 	}
 	DB.Where(User{WeChatId: user.WeChatId}).First(user)
 	return nil
@@ -147,7 +148,7 @@ func (user *User) FillUserByWeChatId() error {
 
 func (user *User) FillUserByUsername() error {
 	if user.Username == "" {
-		return errors.New("username Is empty！")
+		return errors.New("username 为空！")
 	}
 	DB.Where(User{Username: user.Username}).First(user)
 	return nil
@@ -171,7 +172,7 @@ func IsUsernameAlreadyTaken(username string) bool {
 
 func ResetUserPasswordByEmail(email string, password string) error {
 	if email == "" || password == "" {
-		return errors.New("Email address or password is empty！")
+		return errors.New("邮箱地址或密码为空！")
 	}
 	hashedPassword, err := common.Password2Hash(password)
 	if err != nil {
@@ -229,9 +230,14 @@ func GetUserEmail(id int) (email string, err error) {
 	return email, err
 }
 
+func GetUserGroup(id int) (group string, err error) {
+	err = DB.Model(&User{}).Where("id = ?", id).Select("`group`").Find(&group).Error
+	return group, err
+}
+
 func IncreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
-		return errors.New("quota cannot be negative！")
+		return errors.New("quota 不能为负数！")
 	}
 	err = DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", quota)).Error
 	return err
@@ -239,7 +245,7 @@ func IncreaseUserQuota(id int, quota int) (err error) {
 
 func DecreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
-		return errors.New("quota cannot be negative！")
+		return errors.New("quota 不能为负数！")
 	}
 	err = DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota - ?", quota)).Error
 	return err
