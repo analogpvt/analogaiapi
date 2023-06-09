@@ -15,8 +15,9 @@ const EditUser = () => {
     wechat_id: '',
     email: '',
     quota: 0,
+    group: 'default'
   });
-  const { username, display_name, password, github_id, wechat_id, email, quota } =
+  const { username, display_name, password, github_id, wechat_id, email, quota, group } =
     inputs;
   const handleInputChange = (e, { name, value }) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -55,7 +56,7 @@ const EditUser = () => {
     }
     const { success, message } = res.data;
     if (success) {
-      showSuccess('User information updated successfully！');
+      showSuccess('用户信息更新成功！');
     } else {
       showError(message);
     }
@@ -64,13 +65,13 @@ const EditUser = () => {
   return (
     <>
       <Segment loading={loading}>
-        <Header as='h3'>Update user information</Header>
+        <Header as='h3'>更新用户信息</Header>
         <Form autoComplete='new-password'>
           <Form.Field>
             <Form.Input
-              label='username'
+              label='用户名'
               name='username'
-              placeholder={'Please enter a new username'}
+              placeholder={'请输入新的用户名'}
               onChange={handleInputChange}
               value={username}
               autoComplete='new-password'
@@ -78,10 +79,10 @@ const EditUser = () => {
           </Form.Field>
           <Form.Field>
             <Form.Input
-              label='password'
+              label='密码'
               name='password'
               type={'password'}
-              placeholder={'Please enter a new password'}
+              placeholder={'请输入新的密码'}
               onChange={handleInputChange}
               value={password}
               autoComplete='new-password'
@@ -89,60 +90,70 @@ const EditUser = () => {
           </Form.Field>
           <Form.Field>
             <Form.Input
-              label='display name'
+              label='显示名称'
               name='display_name'
-              placeholder={'Please enter a new display name'}
+              placeholder={'请输入新的显示名称'}
               onChange={handleInputChange}
               value={display_name}
               autoComplete='new-password'
             />
           </Form.Field>
           {
-            userId && (
+            userId && <>
               <Form.Field>
                 <Form.Input
-                  label='remaining amount'
+                  label='分组'
+                  name='group'
+                  placeholder={'请输入用户分组'}
+                  onChange={handleInputChange}
+                  value={group}
+                  autoComplete='new-password'
+                />
+              </Form.Field>
+              <Form.Field>
+                <Form.Input
+                  label='剩余额度'
                   name='quota'
-                  placeholder={'Please enter a new balance'}
+                  placeholder={'请输入新的剩余额度'}
                   onChange={handleInputChange}
                   value={quota}
                   type={'number'}
                   autoComplete='new-password'
                 />
               </Form.Field>
-            )
+            </>
           }
           <Form.Field>
             <Form.Input
-              label='Binded GitHub account'
+              label='已绑定的 GitHub 账户'
               name='github_id'
               value={github_id}
               autoComplete='new-password'
-              placeholder='This item is read-only, and needs to be bound by the user through the relevant binding button on the personal setting page, and cannot be directly modified'
+              placeholder='此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改'
               readOnly
             />
           </Form.Field>
           <Form.Field>
             <Form.Input
-              label='Binded WeChat account'
+              label='已绑定的微信账户'
               name='wechat_id'
               value={wechat_id}
               autoComplete='new-password'
-              placeholder='This item is read-only, and needs to be bound by the user through the relevant binding button on the personal setting page, and cannot be directly modified'
+              placeholder='此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改'
               readOnly
             />
           </Form.Field>
           <Form.Field>
             <Form.Input
-              label='Binded email account'
+              label='已绑定的邮箱账户'
               name='email'
               value={email}
               autoComplete='new-password'
-              placeholder='This item is read-only, and needs to be bound by the user through the relevant binding button on the personal setting page, and cannot be directly modified'
+              placeholder='此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改'
               readOnly
             />
           </Form.Field>
-          <Button positive onClick={submit}>submit</Button>
+          <Button positive onClick={submit}>提交</Button>
         </Form>
       </Segment>
     </>
