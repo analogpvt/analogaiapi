@@ -67,7 +67,7 @@ const EditChannel = () => {
 
   const submit = async () => {
     if (!isEdit && (inputs.name === '' || inputs.key === '')) {
-      showInfo('请填写渠道名称和渠道密钥！');
+      showInfo('Please fill in the channel name and channel key！');
       return;
     }
     let localInputs = inputs;
@@ -87,9 +87,9 @@ const EditChannel = () => {
     const { success, message } = res.data;
     if (success) {
       if (isEdit) {
-        showSuccess('渠道更新成功！');
+        showSuccess('Channel updated successfully！');
       } else {
-        showSuccess('渠道创建成功！');
+        showSuccess('Channel created successfully！');
         setInputs(originInputs);
       }
     } else {
@@ -100,11 +100,11 @@ const EditChannel = () => {
   return (
     <>
       <Segment loading={loading}>
-        <Header as='h3'>{isEdit ? '更新渠道信息' : '创建新的渠道'}</Header>
+        <Header as='h3'>{isEdit ? 'Update channel information' : 'create new channel'}</Header>
         <Form autoComplete='new-password'>
           <Form.Field>
             <Form.Select
-              label='类型'
+              label='type'
               name='type'
               options={CHANNEL_OPTIONS}
               value={inputs.type}
@@ -115,15 +115,15 @@ const EditChannel = () => {
             inputs.type === 3 && (
               <>
                 <Message>
-                  注意，<strong>模型部署名称必须和模型名称保持一致</strong>，因为 One API 会把请求体中的 model
-                  参数替换为你的部署名称（模型名称中的点会被剔除），<a target='_blank'
+                  Notice，<strong>The model deployment name must be consistent with the model name</strong>，Because One API will put the model in the request body
+                   Parameters replaced with your deployment name (dots in model names will be stripped)，<a target='_blank'
                                                                     href='https://github.com/songquanpeng/one-api/issues/133?notification_referrer_id=NT_kwDOAmJSYrM2NjIwMzI3NDgyOjM5OTk4MDUw#issuecomment-1571602271'>图片演示</a>。
                 </Message>
                 <Form.Field>
                   <Form.Input
                     label='AZURE_OPENAI_ENDPOINT'
                     name='base_url'
-                    placeholder={'请输入 AZURE_OPENAI_ENDPOINT，例如：https://docs-test-001.openai.azure.com'}
+                    placeholder={'Please enter AZURE_OPENAI_ENDPOINT eg：https://docs-test-001.openai.azure.com'}
                     onChange={handleInputChange}
                     value={inputs.base_url}
                     autoComplete='new-password'
@@ -131,9 +131,9 @@ const EditChannel = () => {
                 </Form.Field>
                 <Form.Field>
                   <Form.Input
-                    label='默认 API 版本'
+                    label='Default API version'
                     name='other'
-                    placeholder={'请输入默认 API 版本，例如：2023-03-15-preview，该配置可以被实际的请求查询参数所覆盖'}
+                    placeholder={'Please enter the default API version, for example: 2023-03-15-preview, this configuration can be overridden by actual request query parameters'}
                     onChange={handleInputChange}
                     value={inputs.other}
                     autoComplete='new-password'
@@ -148,7 +148,7 @@ const EditChannel = () => {
                 <Form.Input
                   label='Base URL'
                   name='base_url'
-                  placeholder={'请输入自定义渠道的 Base URL，例如：https://openai.justsong.cn'}
+                  placeholder={'Please enter the Base URL of the custom channel, eg：https://openai.justsong.cn'}
                   onChange={handleInputChange}
                   value={inputs.base_url}
                   autoComplete='new-password'
@@ -158,9 +158,9 @@ const EditChannel = () => {
           }
           <Form.Field>
             <Form.Input
-              label='名称'
+              label='name'
               name='name'
-              placeholder={'请输入名称'}
+              placeholder={'please enter a name'}
               onChange={handleInputChange}
               value={inputs.name}
               autoComplete='new-password'
@@ -168,9 +168,9 @@ const EditChannel = () => {
           </Form.Field>
           <Form.Field>
             <Form.Input
-              label='分组'
+              label='group'
               name='group'
-              placeholder={'请输入分组'}
+              placeholder={'Please enter group'}
               onChange={handleInputChange}
               value={inputs.group}
               autoComplete='new-password'
@@ -178,8 +178,8 @@ const EditChannel = () => {
           </Form.Field>
           <Form.Field>
             <Form.Dropdown
-              label='模型'
-              placeholder={'请选择该通道所支持的模型'}
+              label='Model'
+              placeholder={'Please select the model supported by this channel'}
               name='models'
               fluid
               multiple
@@ -193,17 +193,17 @@ const EditChannel = () => {
           <div style={{ lineHeight: '40px', marginBottom: '12px'}}>
             <Button type={'button'} onClick={() => {
               handleInputChange(null, { name: 'models', value: basicModels });
-            }}>填入基础模型</Button>
+            }}>Fill in the base model</Button>
             <Button type={'button'} onClick={() => {
               handleInputChange(null, { name: 'models', value: fullModels });
-            }}>填入所有模型</Button>
+            }}>Fill in all models</Button>
           </div>
           {
             batch ? <Form.Field>
               <Form.TextArea
-                label='密钥'
+                label='key'
                 name='key'
-                placeholder={'请输入密钥，一行一个'}
+                placeholder={'Please enter the key, one per line'}
                 onChange={handleInputChange}
                 value={inputs.key}
                 style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
@@ -211,9 +211,9 @@ const EditChannel = () => {
               />
             </Form.Field> : <Form.Field>
               <Form.Input
-                label='密钥'
+                label='key'
                 name='key'
-                placeholder={'请输入密钥'}
+                placeholder={'please enter key'}
                 onChange={handleInputChange}
                 value={inputs.key}
                 autoComplete='new-password'
@@ -224,13 +224,13 @@ const EditChannel = () => {
             !isEdit && (
               <Form.Checkbox
                 checked={batch}
-                label='批量创建'
+                label='Batch creation'
                 name='batch'
                 onChange={() => setBatch(!batch)}
               />
             )
           }
-          <Button positive onClick={submit}>提交</Button>
+          <Button positive onClick={submit}>submit</Button>
         </Form>
       </Segment>
     </>
