@@ -4,18 +4,18 @@ import { Link } from 'react-router-dom';
 import { API, showError, showSuccess } from '../helpers';
 
 import { ITEMS_PER_PAGE } from '../constants';
-import { renderText } from '../helpers/render';
+import { renderGroup, renderText } from '../helpers/render';
 
 function renderRole(role) {
   switch (role) {
     case 1:
-      return <Label>general user</Label>;
+      return <Label>普通用户</Label>;
     case 10:
-      return <Label color='yellow'>administrator</Label>;
+      return <Label color='yellow'>管理员</Label>;
     case 100:
-      return <Label color='orange'>super administrator</Label>;
+      return <Label color='orange'>超级管理员</Label>;
     default:
-      return <Label color='red'>unknown identity</Label>;
+      return <Label color='red'>未知身份</Label>;
   }
 }
 
@@ -69,7 +69,7 @@ const UsersTable = () => {
       });
       const { success, message } = res.data;
       if (success) {
-        showSuccess('Operation completed successfully！');
+        showSuccess('操作成功完成！');
         let user = res.data.data;
         let newUsers = [...users];
         let realIdx = (activePage - 1) * ITEMS_PER_PAGE + idx;
@@ -89,17 +89,17 @@ const UsersTable = () => {
   const renderStatus = (status) => {
     switch (status) {
       case 1:
-        return <Label basic>activated</Label>;
+        return <Label basic>已激活</Label>;
       case 2:
         return (
           <Label basic color='red'>
-            banned
+            已封禁
           </Label>
         );
       default:
         return (
           <Label basic color='grey'>
-            unknown status
+            未知状态
           </Label>
         );
     }
@@ -149,7 +149,7 @@ const UsersTable = () => {
           icon='search'
           fluid
           iconPosition='left'
-          placeholder='Search for a users ID, username, display name, and email address ...'
+          placeholder='搜索用户的 ID，用户名，显示名称，以及邮箱地址 ...'
           value={searchKeyword}
           loading={searching}
           onChange={handleKeywordChange}
@@ -173,7 +173,15 @@ const UsersTable = () => {
                 sortUser('username');
               }}
             >
-              username
+              用户名
+            </Table.HeaderCell>
+            <Table.HeaderCell
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                sortUser('group');
+              }}
+            >
+              分组
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -181,7 +189,7 @@ const UsersTable = () => {
                 sortUser('email');
               }}
             >
-              email address
+              邮箱地址
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -189,7 +197,7 @@ const UsersTable = () => {
                 sortUser('quota');
               }}
             >
-             remaining amount
+              剩余额度
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -197,7 +205,7 @@ const UsersTable = () => {
                 sortUser('role');
               }}
             >
-              user role
+              用户角色
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -205,9 +213,9 @@ const UsersTable = () => {
                 sortUser('status');
               }}
             >
-              state
+              状态
             </Table.HeaderCell>
-            <Table.HeaderCell>operate</Table.HeaderCell>
+            <Table.HeaderCell>操作</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
 
@@ -224,14 +232,15 @@ const UsersTable = () => {
                   <Table.Cell>{user.id}</Table.Cell>
                   <Table.Cell>
                     <Popup
-                      content={user.email ? user.email : 'Email address not bound'}
+                      content={user.email ? user.email : '未绑定邮箱地址'}
                       key={user.display_name}
                       header={user.display_name ? user.display_name : user.username}
                       trigger={<span>{renderText(user.username, 10)}</span>}
                       hoverable
                     />
                   </Table.Cell>
-                  <Table.Cell>{user.email ? renderText(user.email, 30) : 'none'}</Table.Cell>
+                  <Table.Cell>{renderGroup(user.group)}</Table.Cell>
+                  <Table.Cell>{user.email ? renderText(user.email, 30) : '无'}</Table.Cell>
                   <Table.Cell>{user.quota}</Table.Cell>
                   <Table.Cell>{renderRole(user.role)}</Table.Cell>
                   <Table.Cell>{renderStatus(user.status)}</Table.Cell>
@@ -245,7 +254,7 @@ const UsersTable = () => {
                         }}
                         disabled={user.role === 100}
                       >
-                        promote
+                        提升
                       </Button>
                       <Button
                         size={'small'}
@@ -255,12 +264,12 @@ const UsersTable = () => {
                         }}
                         disabled={user.role === 100}
                       >
-                        downgrade
+                        降级
                       </Button>
                       <Popup
                         trigger={
                           <Button size='small' negative disabled={user.role === 100}>
-                            delete
+                            删除
                           </Button>
                         }
                         on='click'
@@ -273,7 +282,7 @@ const UsersTable = () => {
                             manageUser(user.username, 'delete', idx);
                           }}
                         >
-                          delete users {user.username}
+                          删除用户 {user.username}
                         </Button>
                       </Popup>
                       <Button
@@ -287,7 +296,7 @@ const UsersTable = () => {
                         }}
                         disabled={user.role === 100}
                       >
-                        {user.status === 1 ? 'disabled' : 'enabled'}
+                        {user.status === 1 ? '禁用' : '启用'}
                       </Button>
                       <Button
                         size={'small'}
@@ -295,7 +304,7 @@ const UsersTable = () => {
                         to={'/user/edit/' + user.id}
                         disabled={user.role === 100}
                       >
-                        edit
+                        编辑
                       </Button>
                     </div>
                   </Table.Cell>
@@ -306,9 +315,9 @@ const UsersTable = () => {
 
         <Table.Footer>
           <Table.Row>
-            <Table.HeaderCell colSpan='7'>
+            <Table.HeaderCell colSpan='8'>
               <Button size='small' as={Link} to='/user/add' loading={loading}>
-              add new user
+                添加新的用户
               </Button>
               <Pagination
                 floated='right'
